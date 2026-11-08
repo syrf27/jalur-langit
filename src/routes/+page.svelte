@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { ArrowUpRight, CalendarDays, Check, ChevronRight, CircleHelp, Clock3, Feather, Heart, Home, LineChart, LogOut, Menu, Moon, NotebookPen, Plus, Settings, Sparkles, Target, X } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
+	import { defaultActivities, readActivities, writeActivities, type LocalActivity } from '$lib/client/storage';
 
-	type Habit = { name: string; category: string; time: string; done: boolean };
 	type NavItem = { label: string; icon: typeof Home; active?: boolean };
 	let menuOpen = $state(false);
 	let showHabitForm = $state(false);
@@ -11,14 +11,7 @@
 	let newHabitTime = $state('');
 	let hydrated = $state(false);
 	let activeFilter = $state('All');
-	let habits = $state<Habit[]>([
-		{ name: 'Shalat Subuh', category: 'Shalat wajib', time: '04:35', done: true },
-		{ name: 'Dzikir pagi', category: 'Dzikir & doa', time: '05:10', done: true },
-		{ name: 'Membaca Al-Qur’an', category: 'Al-Qur’an', time: '06:30', done: false },
-		{ name: 'Shalat Dzuhur', category: 'Shalat wajib', time: '12:00', done: false },
-		{ name: 'Shalat Ashar', category: 'Shalat wajib', time: '15:15', done: false },
-		{ name: 'Shalat Maghrib', category: 'Shalat wajib', time: '17:55', done: false }
-	]);
+	let habits = $state<LocalActivity[]>(defaultActivities);
 	const navItems: NavItem[] = [
 		{ label: 'Dashboard', icon: Home, active: true }, { label: 'Ibadah tracker', icon: Check }, { label: 'Calendar', icon: CalendarDays },
 		{ label: 'My hajat', icon: Heart }, { label: 'Journal', icon: NotebookPen }, { label: 'Analytics', icon: LineChart }
@@ -34,22 +27,19 @@
 	function toggleHabit(name: string) { habits = habits.map((habit) => habit.name === name ? { ...habit, done: !habit.done } : habit); }
 	function addHabit() {
 		if (!newHabitName.trim()) return;
-		habits = [...habits, { name: newHabitName.trim(), category: newHabitCategory, time: newHabitTime || 'Anytime', done: false }];
+		habits = [...habits, { id: crypto.randomUUID(), name: newHabitName.trim(), category: newHabitCategory, time: newHabitTime || 'Anytime', done: false }];
 		newHabitName = '';
 		newHabitTime = '';
 		showHabitForm = false;
 	}
 	$effect(() => {
 		if (typeof window !== 'undefined' && !hydrated) {
-			const stored = localStorage.getItem('jalur-langit-habits');
-			if (stored) {
-				try { habits = JSON.parse(stored) as Habit[]; } catch { localStorage.removeItem('jalur-langit-habits'); }
-			}
+			habits = readActivities();
 			hydrated = true;
 		}
 	});
 	$effect(() => {
-		if (typeof window !== 'undefined' && hydrated) localStorage.setItem('jalur-langit-habits', JSON.stringify(habits));
+		if (typeof window !== 'undefined' && hydrated) writeActivities(habits);
 	});
 </script>
 
