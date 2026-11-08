@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { ArrowLeft, ArrowUpRight, BookOpen, CalendarDays, Check, Heart, LineChart, NotebookPen, Plus, Settings, Sparkles, Target } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
+	import { onMount } from 'svelte';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	let showActivityForm = $state(false);
+	let checkedActivities = $state<Record<string, boolean>>({});
 	const meta: Record<string, { title: string; eyebrow: string; description: string; icon: typeof CalendarDays }> = {
 		'ibadah-tracker': { title: 'Ibadah tracker', eyebrow: 'Your practice', description: 'Catat ibadah harian dengan tenang dan lihat konsistensimu dari waktu ke waktu.', icon: Check },
 		calendar: { title: 'Calendar', eyebrow: 'Look back gently', description: 'Satu tempat untuk melihat ritme ibadah, journaling, dan perjalananmu.', icon: CalendarDays },
@@ -39,6 +41,18 @@
 		}
 		return category && typeof category === 'object' && 'name' in category ? String(category.name) : 'Ibadah';
 	}
+	function toggleActivity(id: string) {
+		checkedActivities = { ...checkedActivities, [id]: !checkedActivities[id] };
+	}
+	onMount(() => {
+		const stored = localStorage.getItem('jalur-langit-tracker');
+		if (stored) {
+			try { checkedActivities = JSON.parse(stored) as Record<string, boolean>; } catch { localStorage.removeItem('jalur-langit-tracker'); }
+		}
+	});
+	$effect(() => {
+		if (typeof window !== 'undefined' && isTracker) localStorage.setItem('jalur-langit-tracker', JSON.stringify(checkedActivities));
+	});
 </script>
 
 <svelte:head><title>{section.title} · Jalur Langit</title></svelte:head>
@@ -46,7 +60,7 @@
 	<div class="module-top"><a href="/" class="back-link"><ArrowLeft size={16} /> Back to dashboard</a><div class="module-logo"><Sparkles size={15} /> Jalur Langit</div></div>
 	<section class="module-hero"><div class="module-icon"><section.icon size={24} /></div><p class="eyebrow">{section.eyebrow}</p><h1>{section.title}</h1><p>{section.description}</p></section>
 	{#if isTracker}
-		<section class="workspace-panel panel"><div class="section-heading"><div><p class="eyebrow">November 2026</p><h2>Daily tracker</h2></div><button class="text-button" onclick={() => (showActivityForm = !showActivityForm)}><Plus size={15} /> Add activity</button></div>{#if form?.error}<div class="notice error">{form.error}</div>{/if}{#if form?.success}<div class="notice success">Activity saved.</div>{/if}{#if !data.dbReady}<div class="notice">Showing starter activities. Apply the Supabase migration and configure the Supabase service-role key to persist your tracker.</div>{/if}{#if showActivityForm}<form class="inline-create" method="POST" use:enhance><input type="hidden" name="intent" value="create-activity" /><input name="name" placeholder="Activity name" required /><select name="category_id" required><option value="">Choose category</option>{#each categories as category}<option value={category.id}>{category.name}</option>{/each}</select><button class="save-button" type="submit">Save</button></form>{/if}<div class="tracker-table"><div class="tracker-head"><span>Activity</span><span>Today</span><span>Goal</span></div>{#each activities as activity}<div class="tracker-row"><span><strong>{activity.name}</strong><small>{categoryName(activity.category)}</small></span><button class="tracker-check" aria-label={`Complete ${activity.name}`}><Check size={15} /></button><span class="tracker-goal">0 / 30 days</span></div>{/each}</div></section>
+		<section class="workspace-panel panel"><div class="section-heading"><div><p class="eyebrow">November 2026</p><h2>Daily tracker</h2></div><button class="text-button" onclick={() => (showActivityForm = !showActivityForm)}><Plus size={15} /> Add activity</button></div>{#if form?.error}<div class="notice error">{form.error}</div>{/if}{#if form?.success}<div class="notice success">Activity saved.</div>{/if}{#if !data.dbReady}<div class="notice">Showing starter activities. Apply the Supabase migration and configure the Supabase service-role key to persist your tracker.</div>{/if}<div class="notice success tracker-local-note">Checklist changes are saved on this device.</div>{#if showActivityForm}<form class="inline-create" method="POST" use:enhance><input type="hidden" name="intent" value="create-activity" /><input name="name" placeholder="Activity name" required /><select name="category_id" required><option value="">Choose category</option>{#each categories as category}<option value={category.id}>{category.name}</option>{/each}</select><button class="save-button" type="submit">Save</button></form>{/if}<div class="tracker-table"><div class="tracker-head"><span>Activity</span><span>Today</span><span>Goal</span></div>{#each activities as activity}<div class="tracker-row"><span><strong>{activity.name}</strong><small>{categoryName(activity.category)}</small></span><button class:checked={checkedActivities[String(activity.id)]} class="tracker-check" aria-label={`Complete ${activity.name}`} onclick={() => toggleActivity(String(activity.id))}>{#if checkedActivities[String(activity.id)]}<Check size={15} />{/if}</button><span class="tracker-goal">{checkedActivities[String(activity.id)] ? '1' : '0'} / 30 days</span></div>{/each}</div></section>
 	{:else if isCalendar}
 		<section class="workspace-panel panel calendar-workspace"><div class="section-heading"><div><p class="eyebrow">Activity history</p><h2>{monthLabel}</h2></div><div class="calendar-legend"><span><i class="heat low"></i> Quiet</span><span><i class="heat mid"></i> In rhythm</span><span><i class="heat high"></i> Full day</span></div></div>{#if !data.dbReady}<div class="notice">No activity logs are available yet. Complete activities after connecting your Supabase service-role key.</div>{/if}<div class="calendar-grid weekdays">{#each ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as day}<span>{day}</span>{/each}</div><div class="calendar-grid">{#each calendarDays as day}{#if day}<div class:has-log={Boolean(byDate[`${data.year}-${String(data.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`])} class="calendar-day"><strong>{day}</strong>{#if byDate[`${data.year}-${String(data.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`]}<small>{byDate[`${data.year}-${String(data.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`]} done</small>{/if}</div>{:else}<div class="calendar-day empty"></div>{/if}{/each}</div><div class="calendar-summary"><div><strong>{data.recordedDays ?? 0}</strong><span>days with activity</span></div><div><strong>{data.completedCount ?? 0}</strong><span>completed this month</span></div><div><strong>{data.recordedDays ? Math.round((data.recordedDays / (new Date().getDate())) * 100) : 0}%</strong><span>days in rhythm</span></div></div></section>
 	{:else if isAnalytics}

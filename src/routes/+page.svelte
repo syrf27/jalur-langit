@@ -9,6 +9,7 @@
 	let newHabitName = $state('');
 	let newHabitCategory = $state('Al-Qur’an');
 	let newHabitTime = $state('');
+	let hydrated = $state(false);
 	let activeFilter = $state('All');
 	let habits = $state<Habit[]>([
 		{ name: 'Shalat Subuh', category: 'Shalat wajib', time: '04:35', done: true },
@@ -38,6 +39,18 @@
 		newHabitTime = '';
 		showHabitForm = false;
 	}
+	$effect(() => {
+		if (typeof window !== 'undefined' && !hydrated) {
+			const stored = localStorage.getItem('jalur-langit-habits');
+			if (stored) {
+				try { habits = JSON.parse(stored) as Habit[]; } catch { localStorage.removeItem('jalur-langit-habits'); }
+			}
+			hydrated = true;
+		}
+	});
+	$effect(() => {
+		if (typeof window !== 'undefined' && hydrated) localStorage.setItem('jalur-langit-habits', JSON.stringify(habits));
+	});
 </script>
 
 <svelte:head><title>Dashboard · Jalur Langit</title><meta name="description" content="Ruang pribadi untuk menjaga konsistensi ibadah dan refleksi." /></svelte:head>
