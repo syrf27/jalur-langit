@@ -20,3 +20,9 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
 		detectSessionInUrl: false
 	}
 });
+
+export function dbErrorMessage(error: { code?: string; message: string }) {
+	return error.code === '42501'
+		? 'Supabase rejected the write. Set SUPABASE_SERVICE_ROLE_KEY (or add RLS policies) so the app is allowed to save data.'
+		: error.message;
+}
