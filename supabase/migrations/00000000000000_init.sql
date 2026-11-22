@@ -15,6 +15,7 @@ CREATE TABLE ibadah_activities (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     tracking_type VARCHAR(50) DEFAULT 'boolean',
+    schedule_days SMALLINT[] NOT NULL DEFAULT ARRAY[0, 1, 2, 3, 4, 5, 6],
     is_active BOOLEAN DEFAULT true,
     sort_order INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP

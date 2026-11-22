@@ -31,3 +31,12 @@ where not exists (
 	select 1 from ibadah_activities existing
 	where existing.category_id = c.id and existing.name = a.activity_name
 );
+
+insert into ibadah_activities (category_id, name, sort_order, schedule_days)
+select c.id, 'Puasa Sunnah', 1, ARRAY[1, 4]
+from ibadah_categories c
+where c.name = 'Puasa'
+and not exists (
+	select 1 from ibadah_activities existing
+	where existing.category_id = c.id and existing.name = 'Puasa Sunnah'
+);

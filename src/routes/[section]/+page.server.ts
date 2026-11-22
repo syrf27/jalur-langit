@@ -4,7 +4,7 @@ import { dbErrorMessage, supabase } from '$lib/server/db';
 import { todayIso } from '$lib/server/date';
 
 type CategoryRef = { name: string | null } | { name: string | null }[] | null;
-type ActivityRow = { id: string; name: string; category: CategoryRef };
+type ActivityRow = { id: string; name: string; schedule_days: number[]; category: CategoryRef };
 type CategoryRow = { id: string; name: string };
 type LogRow = { activity_date: string; status: string; activity: { name?: string; category: CategoryRef } | { name?: string; category: CategoryRef }[] | null };
 type HajatRow = {
@@ -60,6 +60,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		activities: [] as ActivityRow[],
 		categories: [] as CategoryRow[],
 		completedToday: [] as string[],
+		todayWeekday: new Date(`${todayIso()}T00:00:00`).getDay(),
 		hajats: [] as HajatRow[],
 		entries: [] as JournalRow[]
 	};
@@ -105,7 +106,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 
 	if (section === 'ibadah-tracker') {
 		const [activitiesResult, categoriesResult, logsResult] = await Promise.all([
-			supabase.from('ibadah_activities').select('id,name,category:ibadah_categories(name)').eq('is_active', true).order('sort_order'),
+			supabase.from('ibadah_activities').select('id,name,schedule_days,category:ibadah_categories(name)').eq('is_active', true).order('sort_order'),
 			supabase.from('ibadah_categories').select('id,name').order('sort_order'),
 			supabase
 				.from('ibadah_logs')
@@ -151,6 +152,9 @@ export const actions: Actions = {
 			const activityDate = text('date') || todayIso();
 			const desiredStatus = text('status') || 'completed';
 			if (!activityId) return fail(400, { success: false, error: 'Activity is required.' });
+			const { data: activity } = await supabase.from('ibadah_activities').select('schedule_days').eq('id', activityId).maybeSingle();
+			const scheduleDays = activity?.schedule_days?.length ? activity.schedule_days : [0, 1, 2, 3, 4, 5, 6];
+			if (!scheduleDays.includes(new Date(`${activityDate}T00:00:00`).getDay())) return fail(400, { success: false, error: 'This activity is not scheduled for that day.' });
 			const { error } = desiredStatus === 'completed'
 				? await supabase.from('ibadah_logs').upsert({ activity_id: activityId, activity_date: activityDate, status: 'completed' }, { onConflict: 'activity_id,activity_date' })
 				: await supabase.from('ibadah_logs').delete().eq('activity_id', activityId).eq('activity_date', activityDate);
@@ -162,9 +166,10 @@ export const actions: Actions = {
 			const name = text('name');
 			const categoryId = text('category_id');
 			if (!name || !categoryId) return fail(400, { success: false, error: 'Activity name and category are required.' });
+			const scheduleDays = text('schedule_days') === '1,4' ? [1, 4] : [0, 1, 2, 3, 4, 5, 6];
 			const { error } = await supabase
 				.from('ibadah_activities')
-				.insert({ name, category_id: categoryId, sort_order: 99, is_active: true });
+				.insert({ name, category_id: categoryId, schedule_days: scheduleDays, sort_order: 99, is_active: true });
 			if (error) return writeFailed(error);
 			return { success: true };
 		}
