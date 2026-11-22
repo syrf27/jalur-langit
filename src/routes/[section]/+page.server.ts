@@ -6,7 +6,7 @@ import { todayIso } from '$lib/server/date';
 type CategoryRef = { name: string | null } | { name: string | null }[] | null;
 type ActivityRow = { id: string; name: string; category: CategoryRef };
 type CategoryRow = { id: string; name: string };
-type LogRow = { activity_date: string; status: string; activity: { category: CategoryRef } | { category: CategoryRef }[] | null };
+type LogRow = { activity_date: string; status: string; activity: { name?: string; category: CategoryRef } | { name?: string; category: CategoryRef }[] | null };
 type HajatRow = {
 	id: string;
 	title: string;
@@ -28,24 +28,35 @@ function writeFailed(error: { code?: string; message: string }) {
 	return fail(400, { success: false, error: dbErrorMessage(error) });
 }
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, url }) => {
 	const section = params.section;
 	const now = new Date();
-	const year = now.getFullYear();
-	const month = now.getMonth();
-	const monthStart = new Date(year, month, 1).toISOString().slice(0, 10);
-	const nextMonthStart = new Date(year, month + 1, 1).toISOString().slice(0, 10);
+	const currentYear = now.getFullYear();
+	const currentMonth = now.getMonth() + 1;
+	const requestedMonth = section === 'analytics' ? url.searchParams.get('month') : null;
+	const parsedMonth = requestedMonth?.match(/^(\d{4})-(0[1-9]|1[0-2])$/);
+	const year = parsedMonth ? Number(parsedMonth[1]) : currentYear;
+	const month = parsedMonth ? Number(parsedMonth[2]) : currentMonth;
+	const isFutureMonth = year > currentYear || (year === currentYear && month > currentMonth);
+	const safeYear = isFutureMonth ? currentYear : year;
+	const safeMonth = isFutureMonth ? currentMonth : month;
+	const monthStart = new Date(safeYear, safeMonth - 1, 1).toISOString().slice(0, 10);
+	const nextMonthStart = new Date(safeYear, safeMonth, 1).toISOString().slice(0, 10);
 
 	const result = {
 		section,
 		dbReady: true,
 		dbError: null as string | null,
 		year,
-		month: month + 1,
+		month: safeMonth,
+		monthValue: `${safeYear}-${String(safeMonth).padStart(2, '0')}`,
+		isCurrentMonth: safeYear === currentYear && safeMonth === currentMonth,
 		byDate: {} as Record<string, number>,
 		completedCount: 0,
 		recordedDays: 0,
 		byCategory: {} as Record<string, number>,
+		dailyCounts: {} as Record<string, number>,
+		topActivities: [] as { name: string; count: number }[],
 		activities: [] as ActivityRow[],
 		categories: [] as CategoryRow[],
 		completedToday: [] as string[],
@@ -72,6 +83,7 @@ export const load: PageServerLoad = async ({ params }) => {
 			if (log.status === 'completed') acc[log.activity_date] = (acc[log.activity_date] ?? 0) + 1;
 			return acc;
 		}, {});
+		result.dailyCounts = result.byDate;
 		result.byCategory = completedLogs.reduce<Record<string, number>>((acc, log) => {
 			const activity = Array.isArray(log.activity) ? log.activity[0] : log.activity;
 			const category = activity && typeof activity === 'object' && 'category' in activity ? activity.category : null;
@@ -82,6 +94,13 @@ export const load: PageServerLoad = async ({ params }) => {
 		}, {});
 		result.completedCount = completedLogs.length;
 		result.recordedDays = Object.keys(result.byDate).length;
+		const activityCounts = completedLogs.reduce<Record<string, number>>((acc, log) => {
+			const activity = Array.isArray(log.activity) ? log.activity[0] : log.activity;
+			const name = activity && typeof activity === 'object' && 'name' in activity ? String(activity.name) : 'Other';
+			acc[name] = (acc[name] ?? 0) + 1;
+			return acc;
+		}, {});
+		result.topActivities = Object.entries(activityCounts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)).slice(0, 5);
 	}
 
 	if (section === 'ibadah-tracker') {
@@ -130,21 +149,11 @@ export const actions: Actions = {
 		if (params.section === 'ibadah-tracker' && intent === 'toggle-log') {
 			const activityId = text('activity_id');
 			const activityDate = text('date') || todayIso();
+			const desiredStatus = text('status') || 'completed';
 			if (!activityId) return fail(400, { success: false, error: 'Activity is required.' });
-			const { data: existing, error: readError } = await supabase
-				.from('ibadah_logs')
-				.select('id')
-				.eq('activity_id', activityId)
-				.eq('activity_date', activityDate)
-				.maybeSingle();
-			if (readError) return writeFailed(readError);
-			const { error } = existing
-				? await supabase.from('ibadah_logs').delete().eq('id', existing.id)
-				: await supabase.from('ibadah_logs').insert({
-						activity_id: activityId,
-						activity_date: activityDate,
-						status: 'completed'
-					});
+			const { error } = desiredStatus === 'completed'
+				? await supabase.from('ibadah_logs').upsert({ activity_id: activityId, activity_date: activityDate, status: 'completed' }, { onConflict: 'activity_id,activity_date' })
+				: await supabase.from('ibadah_logs').delete().eq('activity_id', activityId).eq('activity_date', activityDate);
 			if (error) return writeFailed(error);
 			return { success: true };
 		}

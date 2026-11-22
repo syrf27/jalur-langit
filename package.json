@@ -52,6 +52,7 @@
 		"dotenv": "^18.0.9",
 		"jose": "^6.2.15",
 		"lucide-svelte": "^1.0.1",
+		"svelte-sonner": "^1.2.3",
 		"tailwind-merge": "^3.7.0"
 	}
 }

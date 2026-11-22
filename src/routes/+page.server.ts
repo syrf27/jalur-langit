@@ -5,7 +5,16 @@ import { todayIso } from '$lib/server/date';
 
 type CategoryRef = { name: string | null } | { name: string | null }[] | null;
 
+function shiftDate(iso: string, days: number) {
+	const date = new Date(`${iso}T00:00:00`);
+	date.setDate(date.getDate() + days);
+	return todayIso(date);
+}
+
 export const load: PageServerLoad = async () => {
+	const today = todayIso();
+	const weekStart = shiftDate(today, -6);
+	const previousWeekStart = shiftDate(today, -13);
 	const [activitiesResult, categoriesResult, logsResult] = await Promise.all([
 		supabase
 			.from('ibadah_activities')
@@ -13,15 +22,24 @@ export const load: PageServerLoad = async () => {
 			.eq('is_active', true)
 			.order('sort_order'),
 		supabase.from('ibadah_categories').select('id,name').order('sort_order'),
-		supabase.from('ibadah_logs').select('activity_id').eq('activity_date', todayIso()).eq('status', 'completed')
+		supabase.from('ibadah_logs').select('activity_id,activity_date,status').gte('activity_date', previousWeekStart).lte('activity_date', today)
 	]);
 	const error = activitiesResult.error ?? categoriesResult.error ?? logsResult.error;
+	const logs = (logsResult.data ?? []) as { activity_id: string; activity_date: string; status: string }[];
+	const weekly = Array.from({ length: 7 }, (_, index) => {
+		const date = shiftDate(weekStart, index);
+		const completed = logs.filter((log) => log.activity_date === date && log.status === 'completed').length;
+		return { date, completed, previous: logs.filter((log) => log.activity_date === shiftDate(previousWeekStart, index) && log.status === 'completed').length };
+	});
 	return {
 		dbReady: !error,
 		dbError: error ? error.message : null,
 		activities: (activitiesResult.data ?? []) as { id: string; name: string; category: CategoryRef }[],
 		categories: (categoriesResult.data ?? []) as { id: string; name: string }[],
-		completedToday: ((logsResult.data ?? []) as { activity_id: string }[]).map((log) => log.activity_id)
+		completedToday: logs.filter((log) => log.activity_date === today && log.status === 'completed').map((log) => log.activity_id),
+		weekly,
+		weeklyCompleted: weekly.reduce((sum, day) => sum + day.completed, 0),
+		previousWeeklyCompleted: weekly.reduce((sum, day) => sum + day.previous, 0)
 	};
 };
 
@@ -34,21 +52,11 @@ export const actions: Actions = {
 		if (intent === 'toggle-log') {
 			const activityId = text('activity_id');
 			const activityDate = text('date') || todayIso();
+			const desiredStatus = text('status') || 'completed';
 			if (!activityId) return fail(400, { success: false, error: 'Activity is required.' });
-			const { data: existing, error: readError } = await supabase
-				.from('ibadah_logs')
-				.select('id')
-				.eq('activity_id', activityId)
-				.eq('activity_date', activityDate)
-				.maybeSingle();
-			if (readError) return fail(400, { success: false, error: dbErrorMessage(readError) });
-			const { error } = existing
-				? await supabase.from('ibadah_logs').delete().eq('id', existing.id)
-				: await supabase.from('ibadah_logs').insert({
-						activity_id: activityId,
-						activity_date: activityDate,
-						status: 'completed'
-					});
+			const { error } = desiredStatus === 'completed'
+				? await supabase.from('ibadah_logs').upsert({ activity_id: activityId, activity_date: activityDate, status: 'completed' }, { onConflict: 'activity_id,activity_date' })
+				: await supabase.from('ibadah_logs').delete().eq('activity_id', activityId).eq('activity_date', activityDate);
 			if (error) return fail(400, { success: false, error: dbErrorMessage(error) });
 			return { success: true };
 		}
