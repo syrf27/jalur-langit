@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { ArrowLeft, ArrowUpRight, BookOpen, CalendarDays, Check, Heart, LineChart, LoaderCircle, NotebookPen, Pencil, Plus, Settings, Sparkles, Target, Trash2 } from '@lucide/svelte';
+	import { ArrowUpRight, BookOpen, CalendarDays, Check, Heart, LineChart, LoaderCircle, NotebookPen, Pencil, Plus, Settings, Sparkles, Target, Trash2 } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 	import { toast } from 'svelte-sonner';
+	import AppSidebar from '$lib/components/AppSidebar.svelte';
 	import { tick } from 'svelte';
 	import { categoryName } from '$lib/utils';
 	import type { ActionData, PageData } from './$types';
@@ -103,8 +104,8 @@
 </script>
 
 <svelte:head><title>{section.title} · Jalur Langit</title></svelte:head>
-<div class="module-page">
-	<div class="module-top"><a href="/" class="back-link"><ArrowLeft size={16} /> Back to dashboard</a><div class="module-logo"><Sparkles size={15} /> Jalur Langit</div></div>
+<div class="app-shell"><AppSidebar active={section.title} /><main class="module-main"><div class="module-page">
+	<div class="module-top"><div class="module-logo"><Sparkles size={15} /> Jalur Langit <span class="module-separator">/</span> {section.title}</div></div>
 	<section class="module-hero"><div class="module-icon"><section.icon size={24} /></div><p class="eyebrow">{section.eyebrow}</p><h1>{section.title}</h1><p>{section.description}</p></section>
 	{#if form?.error}<div class="notice error">{form.error}</div>{/if}
 	{#if data.dbError}<div class="notice error">Supabase: {data.dbError}</div>{/if}
@@ -126,4 +127,4 @@
 		<section class="module-grid">{#each ['Overview', 'This month', 'Activity insights'] as action, index}<a class="module-card" href={data.section === 'settings' ? '#settings' : '/ibadah-tracker'}><span class="module-card-icon">{#if index === 0}<Target size={18} />{:else if index === 1}<BookOpen size={18} />{:else}<ArrowUpRight size={18} />{/if}</span><span><strong>{action}</strong><small>Open this workspace</small></span><ArrowUpRight size={16} /></a>{/each}</section>
 	{/if}
 	<div class="coming-soon"><Sparkles size={15} /><span>Private by design · your journey stays behind the app password.</span></div>
-</div>
+</div></main></div>

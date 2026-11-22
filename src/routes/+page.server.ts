@@ -15,16 +15,18 @@ export const load: PageServerLoad = async () => {
 	const today = todayIso();
 	const weekStart = shiftDate(today, -6);
 	const previousWeekStart = shiftDate(today, -13);
-	const [activitiesResult, categoriesResult, logsResult] = await Promise.all([
+	const [activitiesResult, categoriesResult, logsResult, hajatResult, journalResult] = await Promise.all([
 		supabase
 			.from('ibadah_activities')
 			.select('id,name,category:ibadah_categories(name)')
 			.eq('is_active', true)
 			.order('sort_order'),
 		supabase.from('ibadah_categories').select('id,name').order('sort_order'),
-		supabase.from('ibadah_logs').select('activity_id,activity_date,status').gte('activity_date', previousWeekStart).lte('activity_date', today)
+		supabase.from('ibadah_logs').select('activity_id,activity_date,status').gte('activity_date', previousWeekStart).lte('activity_date', today),
+		supabase.from('hajats').select('id,title,category,status').order('created_at', { ascending: false }).limit(1),
+		supabase.from('journal_entries').select('id,title,entry_date,category').order('entry_date', { ascending: false }).limit(1)
 	]);
-	const error = activitiesResult.error ?? categoriesResult.error ?? logsResult.error;
+	const error = activitiesResult.error ?? categoriesResult.error ?? logsResult.error ?? hajatResult.error ?? journalResult.error;
 	const logs = (logsResult.data ?? []) as { activity_id: string; activity_date: string; status: string }[];
 	const weekly = Array.from({ length: 7 }, (_, index) => {
 		const date = shiftDate(weekStart, index);
@@ -39,7 +41,9 @@ export const load: PageServerLoad = async () => {
 		completedToday: logs.filter((log) => log.activity_date === today && log.status === 'completed').map((log) => log.activity_id),
 		weekly,
 		weeklyCompleted: weekly.reduce((sum, day) => sum + day.completed, 0),
-		previousWeeklyCompleted: weekly.reduce((sum, day) => sum + day.previous, 0)
+		previousWeeklyCompleted: weekly.reduce((sum, day) => sum + day.previous, 0),
+		latestHajat: hajatResult.data?.[0] ?? null,
+		latestJournal: journalResult.data?.[0] ?? null
 	};
 };
 

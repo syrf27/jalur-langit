@@ -1,14 +1,13 @@
 <script lang="ts">
-	import { ArrowUpRight, CalendarDays, Check, ChevronRight, CircleHelp, Feather, Heart, Home, LineChart, LoaderCircle, LogOut, Menu, Moon, NotebookPen, Plus, Settings, Sparkles, Target, X } from '@lucide/svelte';
+	import { ArrowUpRight, CalendarDays, Check, ChevronRight, CircleHelp, Feather, Heart, LoaderCircle, NotebookPen, Plus, Sparkles, Target, X } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
+	import AppSidebar from '$lib/components/AppSidebar.svelte';
 	import { tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { categoryName } from '$lib/utils';
 	import type { ActionData, PageData } from './$types';
 
-	type NavItem = { label: string; icon: typeof Home; active?: boolean };
 	let { data, form }: { data: PageData; form: ActionData } = $props();
-	let menuOpen = $state(false);
 	let showHabitForm = $state(false);
 	let actionIntent = $state('');
 	let actionFields = $state<Record<string, string>>({});
@@ -18,10 +17,6 @@
 	let optimisticCompleted = $state<string[]>([]);
 	let initialized = $state(false);
 	let activeFilter = $state('All');
-	const navItems: NavItem[] = [
-		{ label: 'Dashboard', icon: Home, active: true }, { label: 'Ibadah tracker', icon: Check }, { label: 'Calendar', icon: CalendarDays },
-		{ label: 'My hajat', icon: Heart }, { label: 'Journal', icon: NotebookPen }, { label: 'Analytics', icon: LineChart }
-	];
 	const week = [
 		{ day: 'Sen', date: '2', value: 78 }, { day: 'Sel', date: '3', value: 92 }, { day: 'Rab', date: '4', value: 64 },
 		{ day: 'Kam', date: '5', value: 86 }, { day: 'Jum', date: '6', value: 100 }, { day: 'Sab', date: '7', value: 72 }, { day: 'Min', date: '8', value: 33, today: true }
@@ -71,19 +66,15 @@
 
 <div class="app-shell">
 	<form method="POST" use:enhance={() => async ({ result, update }) => { await update({ reset: true }); handleActionResult(result); }} bind:this={actionForm} hidden><input type="hidden" name="intent" value={actionIntent} />{#each Object.entries(actionFields) as [key, value]}<input type="hidden" name={key} value={value} />{/each}</form>
-	{#if menuOpen}<button class="mobile-scrim" aria-label="Close navigation" onclick={() => (menuOpen = false)}></button>{/if}
-	<aside class:open={menuOpen} class="sidebar">
-		<div class="brand"><div class="brand-mark"><Moon size={17} strokeWidth={2.2} /></div><div><strong>Jalur Langit</strong><span>Personal space</span></div><button class="mobile-close" aria-label="Close menu" onclick={() => (menuOpen = false)}><X size={18} /></button></div>
-		<nav class="primary-nav" aria-label="Main navigation"><p class="eyebrow nav-label">Workspace</p>{#each navItems as item}<a class:active={item.active} href={item.active ? '/' : `/${item.label.toLowerCase().replaceAll(' ', '-')}`} onclick={() => (menuOpen = false)}><item.icon size={17} strokeWidth={1.8} /><span>{item.label}</span>{#if item.active}<span class="nav-dot"></span>{/if}</a>{/each}</nav>
-		<div class="sidebar-bottom"><div class="sidebar-prompt"><Sparkles size={16} /><p><strong>Pelan-pelan, tapi terus.</strong><br />Konsistensi kecil hari ini berarti.</p></div><a href="#settings"><Settings size={17} /> Settings</a><form method="POST" action="/logout" use:enhance><button type="submit"><LogOut size={17} /> Logout</button></form></div>
-	</aside>
+	<AppSidebar active="Dashboard" />
 	<main class="main-content">
-		<header class="topbar"><button class="menu-button" aria-label="Open navigation" onclick={() => (menuOpen = true)}><Menu size={21} /></button><div class="breadcrumb"><span>Workspace</span><ChevronRight size={14} /><strong>Dashboard</strong></div><div class="topbar-actions"><button class="icon-button" aria-label="Help"><CircleHelp size={18} /></button><div class="avatar">A</div></div></header>
+		<header class="topbar"><div class="breadcrumb"><span>Workspace</span><ChevronRight size={14} /><strong>Dashboard</strong></div><div class="topbar-actions"><button class="icon-button" aria-label="Help"><CircleHelp size={18} /></button><div class="avatar">A</div></div></header>
 		<div class="content-wrap">
 			{#if form?.error}<div class="notice error">{form.error}</div>{/if}
 			{#if data.dbError}<div class="notice error">Supabase: {data.dbError}</div>{/if}
 			<section class="welcome-row"><div><p class="eyebrow">Sabtu, 8 November 2026 · 15 Jumadil Awal 1448</p><h1>Assalamu’alaikum, Alfian <span>✦</span></h1><p class="intro">Semoga hari ini menjadi kesempatan untuk memperbaiki diri<br class="desktop-only" /> dan mendekatkan hati kepada Allah.</p></div><a class="date-link" href="/calendar"><CalendarDays size={16} /> View calendar</a></section>
 			<section class="overview-grid"><div class="progress-card panel"><div class="section-heading"><div><p class="eyebrow">Daily progress</p><h2>Hari ini</h2></div><span class="muted-label">{completed} of {habits.length} complete</span></div><div class="progress-body"><div class="progress-ring" style={`--progress: ${progress * 3.6}deg`}><div><strong>{progress}%</strong><span>complete</span></div></div><div class="progress-copy"><p>“Amalan yang paling dicintai Allah adalah yang paling konsisten, walaupun sedikit.”</p><span>— HR. Bukhari & Muslim</span></div></div><div class="progress-track"><span style={`width: ${progress}%`}></span></div></div><div class="focus-card panel"><div class="focus-icon"><Target size={19} /></div><p class="eyebrow">Your focus</p><h2>Build a gentle<br /><em>morning ritual.</em></h2><p>Mulai dengan satu hal kecil yang bermakna.</p><a href="#tracker">See tracker <ArrowUpRight size={15} /></a></div></section>
+			<section class="dashboard-notes"><a class="dashboard-note panel" href="/my-hajat"><span class="action-icon gold"><Heart size={17} /></span><span><p class="eyebrow">My latest hajat</p><strong>{data.latestHajat?.title ?? 'Simpan satu harapan'}</strong><small>{data.latestHajat ? `${data.latestHajat.category ?? 'Pribadi'} · ${data.latestHajat.status ?? 'active'}` : 'Tulis doa dan target pribadi pertamamu.'}</small></span><ArrowUpRight size={16} /></a><a class="dashboard-note panel" href="/journal"><span class="action-icon sage"><NotebookPen size={17} /></span><span><p class="eyebrow">Daily journal</p><strong>{data.latestJournal?.title ?? 'Beri ruang untuk refleksi'}</strong><small>{data.latestJournal ? `${data.latestJournal.category ?? 'Daily Reflection'} · ${data.latestJournal.entry_date}` : 'Catat apa yang ada di hati hari ini.'}</small></span><ArrowUpRight size={16} /></a></section>
 			<div class="dashboard-grid"><section class="panel habits-panel" id="tracker"><div class="section-heading"><div><p class="eyebrow">Daily habits</p><h2>Aktivitas hari ini</h2></div><button class="text-button" onclick={() => (showHabitForm = true)}><Plus size={15} /> Add habit</button></div><div class="filter-row">{#each filters as filter}<button class:chosen={activeFilter === filter} onclick={() => (activeFilter = filter)}>{filter}</button>{/each}</div><div class="habit-list">{#each filteredHabits as habit}<button class:completed={completedToday.includes(habit.id)} class:pending={pendingIds.includes(habit.id)} class="habit-row" onclick={() => toggleHabit(habit.id)} aria-busy={pendingIds.includes(habit.id)} aria-label={`Mark ${habit.name} ${completedToday.includes(habit.id) ? 'not complete' : 'complete'}`}><span class="check-box">{#if pendingIds.includes(habit.id)}<LoaderCircle class="spin" size={14} />{:else if completedToday.includes(habit.id)}<Check size={14} strokeWidth={2.5} />{/if}</span><span class="habit-name"><strong>{habit.name}</strong><small>{pendingIds.includes(habit.id) ? 'Menyimpan…' : categoryName(habit.category)}</small></span><ChevronRight class="habit-arrow" size={16} /></button>{/each}</div><a class="view-all" href="/ibadah-tracker">View all activities <ArrowUpRight size={15} /></a></section>
 				<section class="panel week-panel"><div class="section-heading"><div><p class="eyebrow">This week</p><h2>Ritme yang terjaga</h2></div><a class="small-link" href="/analytics">Details <ArrowUpRight size={14} /></a></div><div class="week-chart">{#each data.weekly ?? [] as item, index}<div class="day-bar" class:today={index === 6}><div class="bar-track"><span style={`height: ${habits.length ? Math.round((item.completed / habits.length) * 100) : 0}%`}></span></div><strong>{item.completed}</strong><small>{new Intl.DateTimeFormat('id-ID', { weekday: 'short' }).format(new Date(`${item.date}T00:00:00`))}</small><small class="date">{item.date.slice(-2)}</small></div>{/each}</div><div class="week-footer"><span><i class="legend-dot"></i> Completed activities</span><span class="trend">{(data.weeklyCompleted ?? 0) - (data.previousWeeklyCompleted ?? 0) >= 0 ? '+' : ''}{(data.weeklyCompleted ?? 0) - (data.previousWeeklyCompleted ?? 0)} vs last week</span></div></section>
 				<section class="panel quick-panel"><div class="section-heading"><div><p class="eyebrow">Make space</p><h2>Quick actions</h2></div></div><a class="action-row" href="/journal"><span class="action-icon sage"><NotebookPen size={17} /></span><span><strong>Write a reflection</strong><small>Capture what’s on your mind</small></span><ArrowUpRight size={16} /></a><a class="action-row" href="/my-hajat"><span class="action-icon gold"><Heart size={17} /></span><span><strong>Add a hajat</strong><small>Keep a hope close to heart</small></span><ArrowUpRight size={16} /></a><a class="action-row" href="/calendar"><span class="action-icon blue"><CalendarDays size={17} /></span><span><strong>Open calendar</strong><small>Look back with kindness</small></span><ArrowUpRight size={16} /></a></section></div>
