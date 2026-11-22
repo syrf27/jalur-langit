@@ -157,10 +157,10 @@ body { background: var(--ivory); color: var(--ink); }
 /* Keep navigation tied to the viewport while the content scrolls independently. */
 .app-shell { align-items: flex-start; }
 .sidebar { box-sizing: border-box; height: 100vh; min-height: 100vh; position: sticky; top: 0; }
-.module-hero { margin-top: 48px; margin-bottom: 32px; }
+.module-hero { margin-top: 20px; margin-bottom: 32px; }
 .module-page { padding-top: 24px; }
 
 @media (max-width: 720px) {
 	.sidebar { position: fixed; height: 100vh; min-height: 100vh; }
-	.module-hero { margin-top: 38px; margin-bottom: 26px; }
+	.module-hero { margin-top: 20px; margin-bottom: 26px; }
 }

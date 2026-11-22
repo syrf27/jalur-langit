@@ -105,7 +105,6 @@
 
 <svelte:head><title>{section.title} · Jalur Langit</title></svelte:head>
 <div class="app-shell"><AppSidebar active={section.title} /><main class="module-main"><div class="module-page">
-	<div class="module-top"><div class="module-logo"><Sparkles size={15} /> Jalur Langit <span class="module-separator">/</span> {section.title}</div></div>
 	<section class="module-hero"><div class="module-icon"><section.icon size={24} /></div><p class="eyebrow">{section.eyebrow}</p><h1>{section.title}</h1><p>{section.description}</p></section>
 	{#if form?.error}<div class="notice error">{form.error}</div>{/if}
 	{#if data.dbError}<div class="notice error">Supabase: {data.dbError}</div>{/if}
