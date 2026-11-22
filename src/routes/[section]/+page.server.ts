@@ -72,13 +72,17 @@ export const load: PageServerLoad = async ({ params, url }) => {
 	}
 
 	if (section === 'calendar' || section === 'analytics') {
-		const { data, error } = await supabase
-			.from('ibadah_logs')
-			.select('activity_date,status,activity:ibadah_activities(name,category:ibadah_categories(name))')
-			.gte('activity_date', monthStart)
-			.lt('activity_date', nextMonthStart);
-		markError(error);
-		const logs = (data ?? []) as LogRow[];
+		const [logsResult, activitiesResult] = await Promise.all([
+			supabase
+				.from('ibadah_logs')
+				.select('activity_date,status,activity:ibadah_activities(name,category:ibadah_categories(name))')
+				.gte('activity_date', monthStart)
+				.lt('activity_date', nextMonthStart),
+			supabase.from('ibadah_activities').select('schedule_days').eq('is_active', true)
+		]);
+		markError(logsResult.error ?? activitiesResult.error);
+		const logs = (logsResult.data ?? []) as LogRow[];
+		const activities = (activitiesResult.data ?? []) as { schedule_days: number[] | null }[];
 		const completedLogs = logs.filter((log) => log.status === 'completed');
 		result.byDate = logs.reduce<Record<string, number>>((acc, log) => {
 			if (log.status === 'completed') acc[log.activity_date] = (acc[log.activity_date] ?? 0) + 1;
@@ -88,7 +92,11 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		result.dailyCounts = Object.fromEntries(
 			Array.from({ length: daysInMonth }, (_, index) => {
 				const date = `${safeYear}-${String(safeMonth).padStart(2, '0')}-${String(index + 1).padStart(2, '0')}`;
-				return [date, result.byDate[date] ?? 0];
+				const weekday = new Date(`${date}T00:00:00`).getDay();
+				const scheduledCount = activities.filter((activity) => (activity.schedule_days?.length ? activity.schedule_days : [0, 1, 2, 3, 4, 5, 6]).includes(weekday)).length;
+				const completedCount = result.byDate[date] ?? 0;
+				const denominator = Math.max(scheduledCount, completedCount);
+				return [date, denominator ? Math.round((completedCount / denominator) * 100) : 0];
 			})
 		);
 		result.byCategory = completedLogs.reduce<Record<string, number>>((acc, log) => {
