@@ -153,3 +153,14 @@ body { background: var(--ivory); color: var(--ink); }
 .dashboard-notes { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }.dashboard-note { display: flex; align-items: center; gap: 12px; padding: 16px 18px; color: #a0aaa2; text-decoration: none; }.dashboard-note > span:nth-child(2) { flex: 1; }.dashboard-note strong, .dashboard-note small { display: block; }.dashboard-note strong { color: #43534a; font-size: 12px; }.dashboard-note small { color: #9ca59e; font-size: 9px; margin-top: 4px; }.dashboard-note .eyebrow { margin: 0 0 5px; }
 @media (max-width: 900px) { .sidebar { width: 220px; flex-basis: 220px; }.topbar { padding: 0 28px; }.content-wrap { padding: 38px 28px 25px; } }
 @media (max-width: 720px) { .sidebar { position: fixed; z-index: 20; inset: 0 auto 0 0; width: 246px; transform: translateX(-100%); transition: transform .2s ease; box-shadow: 12px 0 25px #173f3515; }.sidebar.open { transform: translateX(0); }.mobile-menu-trigger { display: grid; place-items: center; position: absolute; z-index: 12; top: 17px; left: 16px; width: 32px; height: 32px; border: 0; border-radius: 8px; color: var(--forest); background: white; box-shadow: 0 3px 12px #173f3512; cursor: pointer; }.mobile-scrim { display: block; position: fixed; z-index: 15; inset: 0; background: #173f3538; border: 0; }.mobile-close { display: block; }.collapse-button { display: none; }.topbar { height: 59px; padding: 0 18px 0 62px; justify-content: flex-start; }.topbar-actions { margin-left: auto; }.icon-button { display: none; }.content-wrap { padding: 31px 18px 22px; }.welcome-row { align-items: start; flex-direction: column; gap: 19px; margin-bottom: 26px; }.welcome-row h1 { font-size: 27px; }.desktop-only { display: none; }.overview-grid, .dashboard-grid, .dashboard-notes { grid-template-columns: 1fr; }.habits-panel { grid-row: auto; }.focus-card { min-height: 210px; }.progress-body { gap: 16px; }.progress-copy { max-width: none; }.week-chart { height: 145px; }.week-footer { font-size: 8px; }footer { gap: 10px; flex-direction: column; }.module-page { padding: 24px 18px; }.module-hero { margin: 62px auto 32px; }.module-grid { grid-template-columns: 1fr; }.module-top { padding-left: 42px; }.analytics-toolbar { gap: 12px; flex-direction: column; }.analytics-stats { grid-template-columns: 1fr; } }
+
+/* Keep navigation tied to the viewport while the content scrolls independently. */
+.app-shell { align-items: flex-start; }
+.sidebar { box-sizing: border-box; height: 100vh; min-height: 100vh; position: sticky; top: 0; }
+.module-hero { margin-top: 48px; margin-bottom: 32px; }
+.module-page { padding-top: 24px; }
+
+@media (max-width: 720px) {
+	.sidebar { position: fixed; height: 100vh; min-height: 100vh; }
+	.module-hero { margin-top: 38px; margin-bottom: 26px; }
+}
