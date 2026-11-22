@@ -84,7 +84,13 @@ export const load: PageServerLoad = async ({ params, url }) => {
 			if (log.status === 'completed') acc[log.activity_date] = (acc[log.activity_date] ?? 0) + 1;
 			return acc;
 		}, {});
-		result.dailyCounts = result.byDate;
+		const daysInMonth = new Date(safeYear, safeMonth, 0).getDate();
+		result.dailyCounts = Object.fromEntries(
+			Array.from({ length: daysInMonth }, (_, index) => {
+				const date = `${safeYear}-${String(safeMonth).padStart(2, '0')}-${String(index + 1).padStart(2, '0')}`;
+				return [date, result.byDate[date] ?? 0];
+			})
+		);
 		result.byCategory = completedLogs.reduce<Record<string, number>>((acc, log) => {
 			const activity = Array.isArray(log.activity) ? log.activity[0] : log.activity;
 			const category = activity && typeof activity === 'object' && 'category' in activity ? activity.category : null;

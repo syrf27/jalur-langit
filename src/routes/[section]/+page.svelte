@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ArrowUpRight, BookOpen, Check, Heart, LineChart, LoaderCircle, NotebookPen, Pencil, Plus, Sparkles, Target, Trash2 } from '@lucide/svelte';
+	import { ArrowUpRight, BookOpen, Check, ChevronRight, Heart, LineChart, LoaderCircle, NotebookPen, Pencil, Plus, Sparkles, Target, Trash2 } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 	import { toast } from 'svelte-sonner';
 	import AppSidebar from '$lib/components/AppSidebar.svelte';
@@ -106,7 +106,7 @@
 </script>
 
 <svelte:head><title>{section.title} · Jalur Langit</title></svelte:head>
-<div class="app-shell"><AppSidebar active={section.title} /><main class="module-main"><div class="module-page">
+<div class="app-shell"><AppSidebar active={section.title} /><main class="module-main"><header class="topbar module-topbar"><div class="breadcrumb"><span>Workspace</span><ChevronRight size={14} /><strong>{section.title}</strong></div></header><div class="module-page">
 	<section class="module-hero"><h1>{section.title}</h1><p>{section.description}</p></section>
 	{#if form?.error}<div class="notice error">{form.error}</div>{/if}
 	{#if data.dbError}<div class="notice error">Supabase: {data.dbError}</div>{/if}
