@@ -157,10 +157,12 @@ body { background: var(--ivory); color: var(--ink); }
 /* Keep navigation tied to the viewport while the content scrolls independently. */
 .app-shell { align-items: flex-start; }
 .sidebar { box-sizing: border-box; height: 100vh; min-height: 100vh; position: sticky; top: 0; }
-.module-hero { margin-top: 20px; margin-bottom: 32px; }
+.module-hero { margin-top: 20px; margin-bottom: 28px; }
+.module-hero h1 { font-size: clamp(24px, 3vw, 32px); letter-spacing: -.045em; margin: 0 0 8px; }
+.module-hero > p:last-child { max-width: 600px; line-height: 1.55; font-size: 13px; }
 .module-page { padding-top: 24px; }
 
 @media (max-width: 720px) {
 	.sidebar { position: fixed; height: 100vh; min-height: 100vh; }
-	.module-hero { margin-top: 20px; margin-bottom: 26px; }
+	.module-hero { margin-top: 16px; margin-bottom: 22px; }
 }

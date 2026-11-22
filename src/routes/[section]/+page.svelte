@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ArrowUpRight, BookOpen, CalendarDays, Check, Heart, LineChart, LoaderCircle, NotebookPen, Pencil, Plus, Settings, Sparkles, Target, Trash2 } from '@lucide/svelte';
+	import { ArrowUpRight, BookOpen, Check, Heart, LineChart, LoaderCircle, NotebookPen, Pencil, Plus, Sparkles, Target, Trash2 } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 	import { toast } from 'svelte-sonner';
 	import AppSidebar from '$lib/components/AppSidebar.svelte';
@@ -16,13 +16,13 @@
 	let activeRequest = $state<{ intent: string; id?: string } | null>(null);
 	let optimisticCompleted = $state<string[]>([]);
 	let initialized = $state(false);
-	const meta: Record<string, { title: string; eyebrow: string; description: string; icon: typeof CalendarDays }> = {
-		'ibadah-tracker': { title: 'Ibadah tracker', eyebrow: 'Your practice', description: 'Catat ibadah harian dengan tenang dan lihat konsistensimu dari waktu ke waktu.', icon: Check },
-		calendar: { title: 'Calendar', eyebrow: 'Look back gently', description: 'Satu tempat untuk melihat ritme ibadah, journaling, dan perjalananmu.', icon: CalendarDays },
-		'my-hajat': { title: 'My hajat', eyebrow: 'Keep hope close', description: 'Dokumentasikan doa, harapan, dan langkah kecil yang sedang kamu usahakan.', icon: Heart },
-		journal: { title: 'Journal', eyebrow: 'Make space', description: 'Tulis refleksi pribadi dan simpan momen yang ingin kamu ingat.', icon: NotebookPen },
-		analytics: { title: 'Analytics', eyebrow: 'Reflect, don’t judge', description: 'Gunakan data sebagai cermin untuk memahami pola, bukan sebagai penilaian.', icon: LineChart },
-		settings: { title: 'Settings', eyebrow: 'Your preferences', description: 'Atur tampilan, aktivitas, dan pengelolaan data Jalur Langit.', icon: Settings }
+	const meta: Record<string, { title: string; description: string }> = {
+		'ibadah-tracker': { title: 'Ibadah tracker', description: 'Catat ibadah harian dengan tenang dan lihat konsistensimu dari waktu ke waktu.' },
+		calendar: { title: 'Calendar', description: 'Satu tempat untuk melihat ritme ibadah, journaling, dan perjalananmu.' },
+		'my-hajat': { title: 'My hajat', description: 'Dokumentasikan doa, harapan, dan langkah kecil yang sedang kamu usahakan.' },
+		journal: { title: 'Journal', description: 'Tulis refleksi pribadi dan simpan momen yang ingin kamu ingat.' },
+		analytics: { title: 'Analytics', description: 'Gunakan data sebagai cermin untuk memahami pola, bukan sebagai penilaian.' },
+		settings: { title: 'Settings', description: 'Atur tampilan, aktivitas, dan pengelolaan data Jalur Langit.' }
 	};
 	const section = $derived(meta[data.section] ?? meta.calendar);
 	const isTracker = $derived(data.section === 'ibadah-tracker');
@@ -105,7 +105,7 @@
 
 <svelte:head><title>{section.title} · Jalur Langit</title></svelte:head>
 <div class="app-shell"><AppSidebar active={section.title} /><main class="module-main"><div class="module-page">
-	<section class="module-hero"><div class="module-icon"><section.icon size={24} /></div><p class="eyebrow">{section.eyebrow}</p><h1>{section.title}</h1><p>{section.description}</p></section>
+	<section class="module-hero"><h1>{section.title}</h1><p>{section.description}</p></section>
 	{#if form?.error}<div class="notice error">{form.error}</div>{/if}
 	{#if data.dbError}<div class="notice error">Supabase: {data.dbError}</div>{/if}
 	<form method="POST" use:enhance={() => async ({ result, update }) => { await update({ reset: true }); handleActionResult(result); }} bind:this={actionForm} hidden>
